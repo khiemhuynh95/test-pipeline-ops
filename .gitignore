@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.pyo
+dist/
+lambda.zip
+.venv/
+*.egg-info/
