@@ -12,6 +12,19 @@ pipeline {
     }
 
     stages {
+        stage('Pre-Build') {
+            steps {
+                echo '🛠️ Installing Python 3.12 and build tools...'
+                sh '''
+                    apt-get update && apt-get install -y --no-install-recommends \
+                        python3 python3-pip python3-venv python3-dev \
+                        build-essential make
+                    python3 --version
+                    make --version | head -1
+                '''
+            }
+        }
+
         stage('Build') {
             steps {
                 echo "🔨 Building from branch: ${params.BRANCH}"
@@ -20,10 +33,8 @@ pipeline {
                     userRemoteConfigs: [[url: 'https://github.com/khiemhuynh95/test-pipeline-ops.git']]
                 ])
                 sh '''
-                    echo "Installing dependencies..."
-                    pip install poetry
-                    poetry install --no-interaction
-                    echo "✅ Build complete"
+                    make install
+                    make build
                 '''
             }
         }
@@ -31,43 +42,14 @@ pipeline {
         stage('Test') {
             steps {
                 echo '🧪 Running tests...'
-                sh '''
-                    poetry run pytest tests/ -v --tb=short
-                    echo "✅ All tests passed"
-                '''
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo "🚀 Deploying to dev environment..."
-                sh '''
-                    echo "Building Lambda zip..."
-                    make build
-
-                    echo "Deploying to LocalStack..."
-                    aws --endpoint-url=${AWS_ENDPOINT} lambda update-function-code \
-                        --function-name ${LAMBDA_FUNCTION} \
-                        --zip-file fileb://lambda.zip \
-                        --region ${AWS_REGION} \
-                        2>/dev/null || \
-                    aws --endpoint-url=${AWS_ENDPOINT} lambda create-function \
-                        --function-name ${LAMBDA_FUNCTION} \
-                        --runtime python3.12 \
-                        --handler src.handler.handler \
-                        --role arn:aws:iam::000000000000:role/lambda-role \
-                        --zip-file fileb://lambda.zip \
-                        --region ${AWS_REGION}
-
-                    echo "✅ Deployed to dev"
-                '''
+                sh 'make test'
             }
         }
     }
 
     post {
         success {
-            echo '🎉 Pipeline passed — build ✓ test ✓ deploy (dev) ✓'
+            echo '🎉 Pipeline passed — build ✓ test ✓'
         }
         failure {
             echo '🔴 Pipeline failed'
