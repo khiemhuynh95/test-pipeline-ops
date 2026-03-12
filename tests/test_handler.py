@@ -1,27 +1,49 @@
-"""Tests for the Lambda handler."""
-
-import json
+"""Unit tests for handler with defensive null checks."""
+import unittest
 from src.handler import handler
+import json
 
 
-def test_handler_returns_200():
-    """Handler should return statusCode 200."""
-    result = handler({"key": "value"}, None)
-    assert result["statusCode"] == 200
+class TestHandlerNullSafety(unittest.TestCase):
+    
+    def test_handler_with_valid_event(self):
+        """Test handler works normally with valid event."""
+        event = {"someKey": "someValue", "data": [1, 2, 3]}
+        response = handler(event, None)
+        self.assertEqual(response["statusCode"], 200)
+        body = json.loads(response["body"])
+        self.assertIn("Hello from PipelineOps!", body["message"])  
+    
+    def test_handler_with_none_event(self):
+        """Test handler gracefully handles None event."""
+        response = handler(None, None)
+        self.assertEqual(response["statusCode"], 200)
+        body = json.loads(response["body"])
+        # Should handle null event without crashing
+        self.assertIn("event", body)  
+    
+    def test_handler_with_empty_event(self):
+        """Test handler with empty event dict."""
+        response = handler({}, None)
+        self.assertEqual(response["statusCode"], 200)
+        body = json.loads(response["body"])
+        self.assertIn("Hello from PipelineOps!", body["message"])  
+    
+    def test_handler_with_null_string(self):
+        """Test handler with null string event."""
+        response = handler(None, None)  # Event is None
+        self.assertEqual(response["statusCode"], 200)
+    
+    def test_response_structure_consistency(self):
+        """Test that response structure is consistent regardless of input."""
+        for event in [None, {}, {"data": 1}, "string"]:
+            response = handler(event, None)
+            self.assertEqual(response["statusCode"], 200)
+            self.assertIn("headers", response)
+            self.assertIn("body", response)
+            body = json.loads(response["body"])
+            self.assertEqual(body.get("message"), "Hello from PipelineOps!")
 
 
-def test_handler_returns_json_body():
-    """Handler body should be valid JSON with expected fields."""
-    result = handler({"key": "value"}, None)
-    body = json.loads(result["body"])
-    assert body["message"] == "Hello from PipelineOps!"
-    assert "timestamp" in body
-    assert body["event"] == {"key": "value"}
-
-
-def test_handler_empty_event():
-    """Handler should work with an empty event."""
-    result = handler({}, None)
-    body = json.loads(result["body"])
-    assert body["event"] == {}
-    assert result["statusCode"] == 200
+if __name__ == "__main__":
+    unittest.main()

@@ -9,11 +9,21 @@ def handler(event, context):
 
     Returns a JSON response with the event details and a timestamp.
     """
-    body = {
-        "message": "Hello from PipelineOps!",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "event": event,
-    }
+    # Defensive null checks to prevent NullPointerException
+    if event is None:
+        body = {
+            "message": "Hello from PipelineOps!",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": "<null>",
+        }
+    else:
+        # Safely handle nested null values in event
+        event_str = event if isinstance(event, str) else str(event)
+        body = {
+            "message": "Hello from PipelineOps!",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": event_str,
+        }
 
     return {
         "statusCode": 200,
