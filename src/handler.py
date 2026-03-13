@@ -9,10 +9,11 @@ def handler(event, context):
 
     Returns a JSON response with the event details and a timestamp.
     """
+    # Defensive checks to prevent null pointer issues
     body = {
         "message": "Hello from PipelineOps!",
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "event": event,
+        "event": event if event else {},  # Safe handling of potential None/null event
     }
 
     return {
