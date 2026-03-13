@@ -9,6 +9,10 @@ def handler(event, context):
 
     Returns a JSON response with the event details and a timestamp.
     """
+    # Added validation to prevent NullPointerException-like issues
+    if not isinstance(event, dict):
+        event = {}
+    
     body = {
         "message": "Hello from PipelineOps!",
         "timestamp": datetime.now(timezone.utc).isoformat(),
