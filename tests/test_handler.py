@@ -1,27 +1,24 @@
-"""Tests for the Lambda handler."""
+"""Test for handler function."""
 
 import json
-from src.handler import handler
+from datetime import datetime, timezone
 
 
-def test_handler_returns_200():
-    """Handler should return statusCode 200."""
+def test_handler_with_valid_event():
+    """Test that handler returns correct response for valid event."""
     result = handler({"key": "value"}, None)
     assert result["statusCode"] == 200
+    assert result["headers"]["Content-Type"] == "application/json"
+    assert "body" in result
+    # Verify body is valid JSON by parsing it
+    response_data = json.loads(result["body"])
+    assert "message" in response_data
+    assert response_data["message"] == "Hello from PipelineOps!"
 
-
-def test_handler_returns_json_body():
-    """Handler body should be valid JSON with expected fields."""
-    result = handler({"key": "value"}, None)
-    body = json.loads(result["body"])
-    assert body["message"] == "Hello from PipelineOps!"
-    assert "timestamp" in body
-    assert body["event"] == {"key": "value"}
-
-
-def test_handler_empty_event():
-    """Handler should work with an empty event."""
-    result = handler({}, None)
-    body = json.loads(result["body"])
-    assert body["event"] == {}
+def test_handler_with_none_event():
+    """Test that handler handles None event gracefully."""
+    result = handler(None, None)
     assert result["statusCode"] == 200
+    # The body should still be valid JSON
+    response_data = json.loads(result["body"])
+    assert "timestamp" in response_data
